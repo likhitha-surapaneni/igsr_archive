@@ -7,6 +7,7 @@ import pprint
 import json
 from subprocess import Popen, PIPE
 import subprocess
+from urllib.parse import urlparse, urlunparse
 from igsr_archive.utils import is_tool
 
 import requests
@@ -96,21 +97,23 @@ class API(object):
         elif firePath is not None:
 
             api_logger.info('Retrieving a FIRE object through its FIRE path')
-            firePath.replace("//","/")
             url = f"{endpoint}" \
                   f"{firePath}"
+            parsed = list(urlparse(url))
+            parsed[2] = re.sub("/{2,}", "/", parsed[2])
+            url = urlunparse(parsed)
         #before using aws, check that aws is available in the environment 
         if  "awscli" not in str(os.environ):
             api_logger.info("AWS is not loaded, Retrieving the object can not work without loading AWS")
             sys.exit()
-       
+        
         result = subprocess.run(['aws', 's3', 'cp', url, outfile, '--no-sign-request', '--endpoint-url', endpoint_url], capture_output=True)
-        print(result)
         print(result.returncode) 
         if result.returncode == 0: 
             api_logger.info("File was retrieved successfully")
             return outfile
         else:
+            print("Entered else")
             api_logger.info("Issues copying: " + result.stderr.decode())
             pass
             sys.exit()
@@ -150,7 +153,9 @@ class API(object):
         else:
             print("Could not fetch the object. Please provide either a fireOid or a firePath")
             sys.exit(1)
-
+        parsed = list(urlparse(url))
+        parsed[2] = re.sub("/{2,}", "/", parsed[2])
+        url = urlunparse(parsed)
         res = None
         try:
             res = requests.get(url, auth=(self.user, self.pwd), allow_redirects=True)
@@ -334,6 +339,9 @@ class API(object):
         header = None
         url = f"{CONFIG.get('fire', 'root_endpoint')}/{CONFIG.get('fire', 'version')}/objects/" \
               f"{fireOid}/"
+        parsed = list(urlparse(url))
+        parsed[2] = re.sub("/{2,}", "/", parsed[2])
+        url = urlunparse(parsed)
         if attr_name is 'firePath':
             api_logger.info(f"firePath will be modified")
             print(url)
