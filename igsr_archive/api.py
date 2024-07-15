@@ -118,7 +118,7 @@ class API(object):
             pass
             sys.exit()
 
-    def fetch_object(self, fireOid=None, firePath=None):
+    def fetch_object(self, fireOid=None, firePath=None, s3Path=None, outfile=None):
         """
         Function to fetch the metadata associated to a particular
         FIRE object without downloading the archived object
@@ -129,7 +129,9 @@ class API(object):
                   FIRE object id.
         firePath : str, optional
                    FIRE virtual path.
-
+        s3Path: str, optional
+                S3 path
+        outfile: str, optional
         Returns
         -------
         fireObj : fire.object.fObject
@@ -150,15 +152,28 @@ class API(object):
 
             url = f"{CONFIG.get('fire', 'root_endpoint')}/{CONFIG.get('fire', 'version')}/objects/path/" \
                   f"{firePath}"
+        elif s3Path is not None:
+            if  "awscli" not in str(os.environ):
+                api_logger.info("AWS is not loaded, Retrieving the object can not work without loading AWS")
+                sys.exit()
+            url=f"s3://{s3Path}"
         else:
             print("Could not fetch the object. Please provide either a fireOid or a firePath")
             sys.exit(1)
-        parsed = list(urlparse(url))
-        parsed[2] = re.sub("/{2,}", "/", parsed[2])
-        url = urlunparse(parsed)
-        res = None
-        try:
-            res = requests.get(url, auth=(self.user, self.pwd), allow_redirects=True)
+        endpoint = CONFIG.get('fire', 's3_endpoint')
+        endpoint_url= CONFIG.get('fire', 's3_root_endpoint')
+        if  "awscli" not in str(os.environ):
+            api_logger.info("AWS is not loaded, Retrieving the object can not work without loading AWS")
+            sys.exit()
+        result = None
+        print(s3Path)
+        print(outfile)
+        result = subprocess.run(['aws', 's3', 'cp', url, outfile, '--no-sign-request', '--endpoint-url', endpoint_url], capture_output=True)
+        #res = requests.get(url, auth=(self.user, self.pwd), allow_redirects=True)
+        if result.returncode == 0: 
+            api_logger.info("File was retrieved successfully")
+            return outfile
+        '''
         except HTTPError as http_err:
             print(f'HTTP error occurred: {http_err}')
             print(f'Error message: {res.text}')
@@ -179,7 +194,7 @@ class API(object):
                 api_logger.debug('Fetched FIRE object')
 
                 return fireObj
-
+        '''
     def __parse_json_response(self, json_res):
         """
         Private function to parse JSON API response

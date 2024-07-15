@@ -96,7 +96,7 @@ ct = db.fetch_file(path=prod_tree)
 if ct is None:
     raise Exception(f"Prod_tree: {prod_tree} does not exist in the DB. Can't continue!")
 ct_fpath = re.sub(settingsO.get('ftp', 'ftp_mount') + "/", '', prod_tree)
-ct_fobj = api.fetch_object(firePath=ct_fpath)
+ct_fobj = api.fetch_object(s3Path="g1k-public/ftp/current.tree",outfile="/nfs/production/flicek/ensembl/variation/data/IGSR/CURRENT_TREE/")
 if ct_fobj is None:
     raise Exception(f"Prod_tree file path: {prod_tree} is not archived in FIRE. Can't continue!")
 
@@ -109,7 +109,7 @@ if rf is None:
 # version that is archived is read-only
 changelog_fpath = re.sub(settingsO.get('ftp', 'ftp_mount') + "/", '', args.CHANGELOG)
 # get fireOid for chglogFobj file
-f_obj = api.fetch_object(firePath=changelog_fpath)
+f_obj = api.fetch_object(s3Path="g1k-public/ftp/CHANGELOG",outfile="/nfs/production/flicek/ensembl/variation/data/IGSR/CURRENT_TREE/")
 if f_obj is None:
     raise Exception(f"CHANGELOG file path: {args.CHANGELOG} is not archived in FIRE. Can't continue!")
 
@@ -135,5 +135,6 @@ if pushed_dict:
     os.remove(chlogl_path)
     os.remove(staging_tree)
     for f in pushed_dict['chlog_details']:
+        print(f)
         new_p = "{0}/{1}".format(settingsO.get('ctree', 'temp'), os.path.basename(f))
         os.remove(new_p)
