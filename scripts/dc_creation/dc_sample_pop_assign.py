@@ -1,7 +1,6 @@
 import click
 import sys
 import mysql.connector
-import csv
 import configparser
 from mysql.connector import Error
 
