@@ -116,7 +116,7 @@ def main(input_file, config_file, code):
             insert_info_into_dc_pop_assign(
                 did, sid, popid, host, port, user, database, password
             )
-    string_no_samples = no_sample.join(",")
+    string_no_samples = (",").join(no_sample)
     click.echo(
         f"Samples that do not have a sample id in the database are {string_no_samples}."
     )
