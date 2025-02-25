@@ -169,7 +169,6 @@ def main(input_file, output, config_file, sample_file):
             sample_list = check_sample_info_and_add(sample_name, host, port, database, user, password, sample_file)
             click.echo(f"🔍 Fetching sample and population differently because {sample_name} was not in DB")
             diff_result = fetch_sample_pop_info_differently(sample_name,host, port, database, user, password, sample_list)
-            print(diff_result)
             results.append((diff_result))
             continue
         results.append((sample_name, sample_id, pop_id))
