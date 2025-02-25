@@ -33,6 +33,82 @@ def get_sample_info(sample_name, host, port, database, user, password):
     except Error as e:
         click.echo(f"❌ General MySQL error: {e}")
 
+def check_sample_info_and_add(sample_name, host, port, database, user, password, samples_file):
+    """Query the database to check that every sample in the input file exists in the database"""
+
+    query = """ SELECT sample_id  from sample where name = %s """
+    
+
+    insert_into_query = """INSERT into sample(name, sex, sample_source_id) VALUES (%s, %s, %s)"""
+    samples_file_list = []
+    #get the list of samples in samples_file
+    with open(samples_file, "r") as f:
+        lines = f.readlines()
+
+    samples_file_list = []  # Initialize before the loop
+
+    try: 
+        db = mysql.connector.connect(host=host, port=port, user=user, password=password, db=database)
+        cursor = db.cursor()
+
+        for line in lines: 
+            columns = line.strip().split(";")
+            if not columns or len(columns) < 3: 
+                click.echo(f"❌ Skipping line: {columns} (Not enough columns)")
+                continue
+
+            samples_file_list.append(columns) 
+
+            cursor.execute(query, (columns[0], ))
+            sample_results = cursor.fetchone()
+
+            if sample_results:
+                continue
+
+            click.echo(f"✅ Inserting: {columns}")  # Debugging
+            cursor.execute(insert_into_query, (columns[0], columns[2], 1,))
+            db.commit()
+
+    except mysql.connector.Error as e:
+        click.echo(f"❌ MySQL Error: {e}")
+
+    finally:
+        if db.is_connected():
+            cursor.close()
+            db.close()
+        
+    return samples_file_list
+
+def fetch_sample_pop_info_differently(sample_name,host, port, database, user, password, samples_file_list):
+    "Fetch the sample information differently  because this were none existing sample"
+    #sample_pop_list = [] #list of lists
+
+    sample_query = """ SELECT sample_id from sample where name = %s"""
+    pop_query = """SELECT population_id from population where name = %s or description = %s"""
+
+    try: 
+        db = mysql.connector.connect(host=host, port=port, user=user, password=password, db=database)
+        cursor = db.cursor()
+        if any(sample_name in sublist for sublist in samples_file_list):
+            cursor.execute(sample_query, (sample_name,))
+            sample_results = cursor.fetchone()
+            matching_list = next((sublist for sublist in samples_file_list if sample_name in sublist), None)
+            if matching_list:
+                cursor.execute(pop_query, (matching_list[1], matching_list[1]))
+                pop_results = cursor.fetchone()
+                result_list = [sample_name, sample_results[0], pop_results[0]]
+                return result_list
+        else:
+            click.echo(f"❌ {sample_name} not in list")
+    except Error as e:
+         click.echo(f"❌ General MySQL error: {e}")
+
+    finally:
+        if db.is_connected():
+            cursor.close()
+            db.close()
+
+
 
 @click.command()
 @click.option(
@@ -56,8 +132,17 @@ def get_sample_info(sample_name, host, port, database, user, password):
     help="Configuration file for DB",
     required=True,
 )
-def main(input_file, output, config_file):
-    """Reads sample names from a file and queries the database for sample and population IDs."""
+@click.option(
+    "--sample_file", 
+    "-s",
+    type=click.Path(exists=True),
+    help="File containing sample and population information"
+)
+def main(input_file, output, config_file, sample_file):
+    """Reads sample names from a file and queries the database for sample and population IDs.
+    Optional usage - 
+    If new samples, it checks it does not exists in the database and adds it then fetches the information from the sample and population table, all you need is a samples file in the format
+    sample_name,population,sex"""
 
     click.echo("🔍 Connecting to database....")
     config = configparser.ConfigParser()
@@ -79,6 +164,14 @@ def main(input_file, output, config_file):
         sample_id, pop_id = get_sample_info(
             sample_name, host, port, database, user, password
         )
+        if not sample_id and sample_file:
+            click.echo("🔍 Checking sample info and adding......")
+            sample_list = check_sample_info_and_add(sample_name, host, port, database, user, password, sample_file)
+            click.echo(f"🔍 Fetching sample and population differently because {sample_name} was not in DB")
+            diff_result = fetch_sample_pop_info_differently(sample_name,host, port, database, user, password, sample_list)
+            print(diff_result)
+            results.append((diff_result))
+            continue
         results.append((sample_name, sample_id, pop_id))
 
     click.echo(f"✅ Sample and population fetched")
