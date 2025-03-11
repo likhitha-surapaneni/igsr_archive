@@ -28,10 +28,10 @@ def get_data_from_ena(input_file, output_file):
         tsvfile.write("##STUDY_ACCESSION=ENA/SRA assigned accession for the study\n")
         tsvfile.write("##CENTER_NAME=sequencing center that produced and submitted the sequence data\n")
         tsvfile.write("##SUBMISSION_ACCESSION=ENA/SRA assigned accession for this submission\n")
-        tsvfile.write("SUBMITTED_FTP=Submission FTP for this submission\n")
-        tsvfile.write("SAMPLE_TITLE=Title for the submitted sample\n")
-        tsvfile.write("SAMPLE_DESCRIPTION=Description of the sample, usually Technology\n")
-        tsvfile.write("Country=Country of the sample\n")
+        tsvfile.write("##SUBMITTED_FTP=Submission FTP for this submission\n")
+        tsvfile.write("##SAMPLE_TITLE=Title for the submitted sample\n")
+        tsvfile.write("##SAMPLE_DESCRIPTION=Description of the sample, usually Technology\n")
+        tsvfile.write("##Country=Country of the sample\n")
         tsvfile.write("##EXPERIMENT_ACCESSION=ENA/SRA assigned accession for the experiment\n")
         tsvfile.write("##INSTRUMENT_PLATFORM=type of sequencing machine used in the experiment\n")
         tsvfile.write("##INSTRUMENT_MODEL=model of the sequencing machine used in the experiment\n")
@@ -40,7 +40,7 @@ def get_data_from_ena(input_file, output_file):
         tsvfile.write("##RUN_DATE=date the run was done\n")
         tsvfile.write("##LIBRARY_MAX_FRAGMENT_SIZE=submitter specified insert size of the library\n")
         tsvfile.write("#LIBRARY_LAYOUT=Library layout, this can be either PAIRED or SINGLE\n")
-        tsvfile.write("FASTQ_ASPERA=ASPERA Path for which FASTQ file can be downloaded\n")
+        tsvfile.write("##FASTQ_ASPERA=ASPERA Path for which FASTQ file can be downloaded\n")
         tsvfile.write("##READ_COUNT=number of reads in the run, two mates are considered as one read\n")
 
 
