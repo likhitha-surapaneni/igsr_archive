@@ -13,7 +13,14 @@ url = "https://www.ebi.ac.uk/ena/portal/api/search"
 @click.option("--input_file", "-i", type=click.Path(exists=True), help="Input file containing file accession column and project accession")
 @click.option("--output_file", "-o", help="Output index file accession column")
 
-def get_data_from_ena(input_file: str, output_file: str):
+def get_data_from_ena(input_file: str, output_file: str) -> None:
+    """
+        Function that fetches data from the ENA API using the run accession and study accession 
+
+        Args:
+            input_file (str): Input file containing the run accession and study accession, we expect the column to be file accession and study accesssion
+            output_file (str): Output file containing all the data fetched from the ENA API
+    """    
     
     # Read CSV and process each row
     with open(input_file, newline='', encoding='utf-8') as csvfile, open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
@@ -65,17 +72,40 @@ def get_data_from_ena(input_file: str, output_file: str):
                 click.echo(f"No results for {file_accession}")
 
 def check_file_accession(accession: str) -> None:
+    """
+        Checks the file contains the column file accession 
+        #To do - Maybe check for also Run accession 
+
+        Args:
+            accession (str): Accession
+    """    
     if accession is None:
          click.echo(f"Your file does not contain file accession information")
          sys.exit()
 
 def check_project_accession(accession: str) -> None:
+    """
+        Checks the file contains the column project accession
+
+        Args:
+            accession (str): Column accession
+    """    
     if accession is None:
         click.echo(f"Your file does not contain project accession information")
         sys.exit()
 
 def construct_query(file_accession: str, project_accession: str) -> str:
-    """Constructs the API query string."""
+    """
+        Constructs the API query string
+
+        Args:
+            file_accession (str): Run accession - file accession column
+            project_accession (str): Study accession - project accession column
+
+        Returns:
+            str: Query formed.
+    """    
+
     base_query = (
         f'result=read_run&query=run_accession%3D%22{file_accession}%22%20AND%20'
         f'study_accession%3D%22{project_accession}%22&fields='
@@ -89,6 +119,16 @@ def construct_query(file_accession: str, project_accession: str) -> str:
     return base_query
 
 def return_response(query: str, file_accesion: str) -> str:
+    """
+        Process the response from the ENA API
+
+        Args:
+            query (str): Query
+            file_accesion (str): Run accesssion 
+
+        Returns:
+            str:    The response text
+    """    
     if query:
         response = requests.post(url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=query)
         if response.status_code == 200:

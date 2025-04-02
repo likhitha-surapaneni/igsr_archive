@@ -3,10 +3,22 @@ import mysql.connector
 import csv
 import configparser
 from mysql.connector import Error, InterfaceError, DatabaseError
+from typings import List, Dict
 
 
-def get_sample_info(sample_name, host, port, database, user, password):
-    """Query the database to fetch sample ID and population ID for a given sample name."""
+def get_sample_info(sample_name: str, host: str, port: int, database: str, user: str, password: str) -> None:
+    """
+        Query the database to fetch sample ID and population ID for a given sample name
+
+        Args:
+            sample_name (str): The sample name
+            host (str): The host of the database
+            port (int): The port of the database
+            user (str): The user for the database
+            database (str): The database 
+            password (str): Password for the database
+
+    """    
     query = """
         SELECT s.sample_id, spa.population_id
         FROM sample s
@@ -33,8 +45,20 @@ def get_sample_info(sample_name, host, port, database, user, password):
     except Error as e:
         click.echo(f"❌ General MySQL error: {e}")
 
-def check_sample_info_and_add(sample_name, host, port, database, user, password, samples_file):
-    """Query the database to check that every sample in the input file exists in the database"""
+def check_sample_info_and_add(host: str, port: int, database: str, user: str, password: str, samples_file: str) -> List[str, str, str]:
+    """
+        Query the database to check that every sample in the input file exists in the database
+        Args:
+            host (str): The host of the database
+            port (int): The port of the database
+            user (str): The user for the database
+            database (str): The database 
+            password (str): Password for the database
+            samples_file (str): Samples file for new sample you want to check and add 
+
+        Returns:
+            List[str]: Return list of samples containing sample_name,population,sex
+    """    
 
     query = """ SELECT sample_id  from sample where name = %s """
     
@@ -79,8 +103,22 @@ def check_sample_info_and_add(sample_name, host, port, database, user, password,
         
     return samples_file_list
 
-def fetch_sample_pop_info_differently(sample_name,host, port, database, user, password, samples_file_list):
-    "Fetch the sample information differently  because this were none existing sample"
+def fetch_sample_pop_info_differently(sample_name: str, host: str, port: int, database: str, user: str, password: str, samples_file_list: List[str, str, str]) -> List[str, int, int]:
+    """
+        Fetch the sample information differently  because this were none existing sample
+        Args:
+            sample_name (str): sample name 
+            host (str): The host of the database
+            port (int): The port of the database
+            user (str): The user for the database
+            database (str): The database 
+            password (str): Password for the database
+            samples_file_list (str): Sample list containing for new sample you want to check and add 
+
+        Returns:
+            List[str, int, int]: A list of sample_name, sample_id, pop_id
+          
+    """
     #sample_pop_list = [] #list of lists
 
     sample_query = """ SELECT sample_id from sample where name = %s"""
@@ -119,7 +157,7 @@ def fetch_sample_pop_info_differently(sample_name,host, port, database, user, pa
     required=True,
 )
 @click.option(
-    "--output",
+    "--output_file",
     "-o",
     type=click.Path(),
     help="Output CSV file to save results.",
@@ -136,24 +174,31 @@ def fetch_sample_pop_info_differently(sample_name,host, port, database, user, pa
     "--sample_file", 
     "-s",
     type=click.Path(exists=True),
-    help="File containing sample and population information"
+    help="File containing sample and population information",
+    required=False
 )
-def main(input_file, output, config_file, sample_file):
-    """Reads sample names from a file and queries the database for sample and population IDs.
-    Optional usage - 
-    If new samples, it checks it does not exists in the database and adds it then fetches the information from the sample and population table, all you need is a samples file in the format
-    sample_name,population,sex"""
 
-    click.echo("🔍 Connecting to database....")
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    host = config["database"]["host"]
-    port = config["database"]["port"]
-    user = config["database"]["user"]
-    database = config["database"]["name"]
-    password = config["database"]["password"]
+def main(input_file: str, output_file: str, config_file: str, sample_file: str):
+    """
+        Reads sample names from a file and queries the database for sample and population IDs.
+        Optional usage - 
+        If new samples, it checks it does not exists in the database and adds it then fetches the information from the sample and population table, all you need is a samples file in the format
+        sample_name,population,sex
+
+        Args:
+            input_file (str): Input file
+            output_file (str): Output file 
+            config_file (str): Config file 
+            sample_file (str): Samples file (optional)
+    """    
 
     results = []
+    data = read_from_config_file(config_file)
+    host = data["host"]
+    port = data["port"]
+    user = data["user"]
+    database = data["password"]
+    password = data["password"]
 
     with open(input_file, "r") as f:
         sample_names = [line.strip() for line in f if line.strip()]
@@ -166,7 +211,7 @@ def main(input_file, output, config_file, sample_file):
         )
         if not sample_id and sample_file:
             click.echo("🔍 Checking sample info and adding......")
-            sample_list = check_sample_info_and_add(sample_name, host, port, database, user, password, sample_file)
+            sample_list = check_sample_info_and_add(host, port, database, user, password, sample_file)
             click.echo(f"🔍 Fetching sample and population differently because {sample_name} was not in DB")
             diff_result = fetch_sample_pop_info_differently(sample_name,host, port, database, user, password, sample_list)
             results.append((diff_result))
@@ -182,6 +227,28 @@ def main(input_file, output, config_file, sample_file):
             writer.writerows(results)
         click.echo(f"📁 Results saved to {output}")
 
+
+def read_from_config_file(config_file: str) -> Dict[str]:
+    """
+        Reads from the config file
+
+        Args:
+            config_file (str): Config file (Path)
+
+        Returns:
+            Dict[str]: Dictionary containing all the database configuration information
+    """    
+    data = {}
+    click.echo("🔍 Connecting to database....")
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    data["host"] = config["database"]["host"]
+    data["port"] = config["database"]["port"]
+    data["user"] = config["database"]["user"]
+    data["database"] = config["database"]["name"]
+    data["password"] = config["database"]["password"]
+
+    return data
 
 if __name__ == "__main__":
     main()

@@ -5,21 +5,6 @@ import configparser
 from mysql.connector import Error
 from typings import Dict
 
-@click.command()
-@click.option(
-    "--input_file",
-    "-i",
-    type=click.Path(exists=True),
-    help="Input file only sample id and population id",
-    required=True,
-)
-@click.option(
-    "--config_file",
-    "-c",
-    type=click.Path(exists=True),
-    help="Config file for database setup",
-)
-@click.option("--code", "-code", type=str, help="Data collection code")
 
 def insert_info_into_dc_pop_assign(
     did: int, sid: int, popid: int, host: str, port: int, user: str, database: str, password: str
@@ -109,7 +94,23 @@ def get_data_collection_id(code: str, host: str, port: int, user: str, database:
         click.echo(f"❌ Database error issue: {e}")
         sys.exit()
 
-def main(input_file: str, data: Dict[str], code: str):
+@click.command()
+@click.option(
+    "--input_file",
+    "-i",
+    type=click.Path(exists=True),
+    help="Input file only sample id and population id",
+    required=True,
+)
+@click.option(
+    "--config_file",
+    "-c",
+    type=click.Path(exists=True),
+    help="Config file for database setup",
+)
+@click.option("--code", "-code", type=str, help="Data collection code")
+
+def main(input_file: str, config_file: str, code: str)  -> None:
     """
         Uses the data collection and the input file to populate the dc_sample_pop assign table
 
@@ -118,7 +119,7 @@ def main(input_file: str, data: Dict[str], code: str):
             data (Dict[str]): data containing the database 
             code (str): The code of the data collection
     """    
-
+    data = read_from_config_file(config_file)
     host = data["host"]
     port = data["port"]
     user = data["user"]
@@ -151,7 +152,16 @@ def main(input_file: str, data: Dict[str], code: str):
     click.echo(f"✅ All values in file {input_file} have been inserted into db")
 
 
-def read_from_config_file(config_file: str):
+def read_from_config_file(config_file: str) -> Dict[str]:
+    """
+        Reads from the config file
+
+        Args:
+            config_file (str): Config file (Path)
+
+        Returns:
+            Dict[str]: Dictionary containing all the database configuration information
+    """    
     data = {}
     click.echo("🔍 Connecting to database....")
     config = configparser.ConfigParser()
