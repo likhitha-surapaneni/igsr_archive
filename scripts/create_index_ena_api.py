@@ -2,7 +2,7 @@ import csv
 import requests
 import click
 import sys
-
+import os
 # # Input and output file names
 # input_csv = "supplementary.csv"
 # output_tsv = "output.tsv"
@@ -12,7 +12,7 @@ import sys
 @click.option("--output_file", "-o", help="Output index file accession column")
 
 
-def get_data_from_ena(input_file, output_file):
+def get_data_from_ena(input_file: str | os.PathLike , output_file: str | os.PathLike):
     url = "https://www.ebi.ac.uk/ena/portal/api/search"
     # Read CSV and process each row
     with open(input_file, newline='', encoding='utf-8') as csvfile, open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
@@ -39,7 +39,7 @@ def get_data_from_ena(input_file, output_file):
         tsvfile.write("##RUN_ALIAS=run name assigned by the sequencing machine\n")
         tsvfile.write("##RUN_DATE=date the run was done\n")
         tsvfile.write("##LIBRARY_MAX_FRAGMENT_SIZE=submitter specified insert size of the library\n")
-        tsvfile.write("#LIBRARY_LAYOUT=Library layout, this can be either PAIRED or SINGLE\n")
+        tsvfile.write("##LIBRARY_LAYOUT=Library layout, this can be either PAIRED or SINGLE\n")
         tsvfile.write("##FASTQ_ASPERA=ASPERA Path for which FASTQ file can be downloaded\n")
         tsvfile.write("##READ_COUNT=number of reads in the run, two mates are considered as one read\n")
 
@@ -48,17 +48,11 @@ def get_data_from_ena(input_file, output_file):
             file_accession = row["file accession"]
             project_accession = row["project accession"]
 
-            if file_accession is None:
-                click.echo(f"Your file does not contain file accession information")
-                sys.exit()
+            check_file_accession(file_accession)
+            check_project_accession(project_accession)
 
-            if project_accession is None: 
-                click.echo(f"Your file does not contain project accession information")
-                sys.exit()
 
             query = f'result=read_run&query=run_accession%3D%22{file_accession}%22%20AND%20study_accession%3D%22{project_accession}%22&fields=fastq_ftp%2Csra_md5%2Csubmitted_md5%2Crun_accession%2Csample_accession%2Cstudy_accession%2Ccenter_name%2Csubmission_accession%2Csubmitted_ftp%2Csample_title%2Csample_description%2Ccountry%2Cexperiment_accession%2Cinstrument_platform%2Cinstrument_model%2Clibrary_name%2Crun_alias%2Crun_date%2Clibrary_max_fragment_size%2Clibrary_layout%2Cfastq_aspera%2Cread_count&format=tsv'
-
-
             
             # Make the API request
             response = requests.post(url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=query)
@@ -74,6 +68,16 @@ def get_data_from_ena(input_file, output_file):
                     click.echo(f"No results for {file_accession}")
             else:
                 click.echo(f"Failed request for {file_accession}: {response.status_code}")
+
+def check_file_accession(accession: str):
+    if accession is None:
+         click.echo(f"Your file does not contain file accession information")
+         sys.exit()
+
+def check_project_accession(accession: str):
+    if accession is None:
+        click.echo(f"Your file does not contain project accession information")
+        sys.exit()
 
 if __name__ == "__main__":
     get_data_from_ena()
