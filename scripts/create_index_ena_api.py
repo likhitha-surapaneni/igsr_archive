@@ -7,13 +7,14 @@ import os
 # input_csv = "supplementary.csv"
 # output_tsv = "output.tsv"
 
+url = "https://www.ebi.ac.uk/ena/portal/api/search"
+
 @click.command()
 @click.option("--input_file", "-i", type=click.Path(exists=True), help="Input file containing file accession column and project accession")
 @click.option("--output_file", "-o", help="Output index file accession column")
 
-
-def get_data_from_ena(input_file: str | os.PathLike , output_file: str | os.PathLike):
-    url = "https://www.ebi.ac.uk/ena/portal/api/search"
+def get_data_from_ena(input_file: str, output_file: str):
+    
     # Read CSV and process each row
     with open(input_file, newline='', encoding='utf-8') as csvfile, open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
         reader = csv.DictReader(csvfile, delimiter=',') 
@@ -51,33 +52,52 @@ def get_data_from_ena(input_file: str | os.PathLike , output_file: str | os.Path
             check_file_accession(file_accession)
             check_project_accession(project_accession)
 
-
-            query = f'result=read_run&query=run_accession%3D%22{file_accession}%22%20AND%20study_accession%3D%22{project_accession}%22&fields=fastq_ftp%2Csra_md5%2Csubmitted_md5%2Crun_accession%2Csample_accession%2Cstudy_accession%2Ccenter_name%2Csubmission_accession%2Csubmitted_ftp%2Csample_title%2Csample_description%2Ccountry%2Cexperiment_accession%2Cinstrument_platform%2Cinstrument_model%2Clibrary_name%2Crun_alias%2Crun_date%2Clibrary_max_fragment_size%2Clibrary_layout%2Cfastq_aspera%2Cread_count&format=tsv'
+            query = construct_query(file_accession, project_accession)
             
             # Make the API request
-            response = requests.post(url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=query)
-            
-            if response.status_code == 200:
-                lines = response.text.strip().split("\n")
-                if len(lines) > 1:
-                    if i == 0: # to write header for only the first role
-                        tsvfile.write(f"#{lines[0].upper()}" + "\n")
-                    for line in lines[1:]:
-                        tsvfile.write(line + "\n")
-                else:
-                    click.echo(f"No results for {file_accession}")
+            lines = return_response(query, file_accession)
+            if len(lines) > 1:
+                if i == 0: # to write header for only the first role
+                    tsvfile.write(f"#{lines[0].upper()}" + "\n")
+                for line in lines[1:]:
+                    tsvfile.write(line + "\n")
             else:
-                click.echo(f"Failed request for {file_accession}: {response.status_code}")
+                click.echo(f"No results for {file_accession}")
 
-def check_file_accession(accession: str):
+def check_file_accession(accession: str) -> None:
     if accession is None:
          click.echo(f"Your file does not contain file accession information")
          sys.exit()
 
-def check_project_accession(accession: str):
+def check_project_accession(accession: str) -> None:
     if accession is None:
         click.echo(f"Your file does not contain project accession information")
         sys.exit()
+
+def construct_query(file_accession: str, project_accession: str) -> str:
+    """Constructs the API query string."""
+    base_query = (
+        f'result=read_run&query=run_accession%3D%22{file_accession}%22%20AND%20'
+        f'study_accession%3D%22{project_accession}%22&fields='
+        'fastq_ftp%2Csra_md5%2Csubmitted_md5%2Crun_accession%2Csample_accession%2C'
+        'study_accession%2Ccenter_name%2Csubmission_accession%2Csubmitted_ftp%2C'
+        'sample_title%2Csample_description%2Ccountry%2Cexperiment_accession%2C'
+        'instrument_platform%2Cinstrument_model%2Clibrary_name%2Crun_alias%2C'
+        'run_date%2Clibrary_max_fragment_size%2Clibrary_layout%2Cfastq_aspera%2C'
+        'read_count&format=tsv'
+    )
+    return base_query
+
+def return_response(query: str, file_accesion: str) -> str:
+    if query:
+        response = requests.post(url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=query)
+        if response.status_code == 200:
+                lines = response.text.strip().split("\n")
+                return lines
+        else:
+            click.echo(f"Failed request for {file_accesion}: {response.status_code}")
+
+
 
 if __name__ == "__main__":
     get_data_from_ena()
