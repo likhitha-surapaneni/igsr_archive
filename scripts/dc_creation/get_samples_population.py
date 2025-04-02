@@ -3,7 +3,7 @@ import mysql.connector
 import csv
 import configparser
 from mysql.connector import Error, InterfaceError, DatabaseError
-from typings import List, Dict
+from typing import List, Dict, Union, Any
 
 
 def get_sample_info(sample_name: str, host: str, port: int, database: str, user: str, password: str) -> None:
@@ -45,7 +45,7 @@ def get_sample_info(sample_name: str, host: str, port: int, database: str, user:
     except Error as e:
         click.echo(f"❌ General MySQL error: {e}")
 
-def check_sample_info_and_add(host: str, port: int, database: str, user: str, password: str, samples_file: str) -> List[str, str, str]:
+def check_sample_info_and_add(host: str, port: int, database: str, user: str, password: str, samples_file: str) -> List[str]:
     """
         Query the database to check that every sample in the input file exists in the database
         Args:
@@ -103,7 +103,7 @@ def check_sample_info_and_add(host: str, port: int, database: str, user: str, pa
         
     return samples_file_list
 
-def fetch_sample_pop_info_differently(sample_name: str, host: str, port: int, database: str, user: str, password: str, samples_file_list: List[str, str, str]) -> List[str, int, int]:
+def fetch_sample_pop_info_differently(sample_name: str, host: str, port: int, database: str, user: str, password: str, samples_file_list: List[str]) -> List[Union[str, int]]:
     """
         Fetch the sample information differently  because this were none existing sample
         Args:
@@ -197,7 +197,7 @@ def main(input_file: str, output_file: str, config_file: str, sample_file: str):
     host = data["host"]
     port = data["port"]
     user = data["user"]
-    database = data["password"]
+    database = data["database"]
     password = data["password"]
 
     with open(input_file, "r") as f:
@@ -209,6 +209,7 @@ def main(input_file: str, output_file: str, config_file: str, sample_file: str):
         sample_id, pop_id = get_sample_info(
             sample_name, host, port, database, user, password
         )
+        print(f"{sample_name}: {sample_id}")
         if not sample_id and sample_file:
             click.echo("🔍 Checking sample info and adding......")
             sample_list = check_sample_info_and_add(host, port, database, user, password, sample_file)
@@ -220,15 +221,15 @@ def main(input_file: str, output_file: str, config_file: str, sample_file: str):
 
     click.echo(f"✅ Sample and population fetched")
     # Save results to a CSV file if specified
-    if output:
-        with open(output, "w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(["Sample Name", "Sample ID", "Population ID"])
-            writer.writerows(results)
-        click.echo(f"📁 Results saved to {output}")
+
+    with open(output_file, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["Sample Name", "Sample ID", "Population ID"])
+        writer.writerows(results)
+    click.echo(f"📁 Results saved to {output_file}")
 
 
-def read_from_config_file(config_file: str) -> Dict[str]:
+def read_from_config_file(config_file: str) -> Dict[str, Any]:
     """
         Reads from the config file
 
