@@ -3,7 +3,7 @@ import sys
 import mysql.connector
 import configparser
 from mysql.connector import Error
-from typings import Dict
+from typing import Dict, Any
 
 
 def insert_info_into_dc_pop_assign(
@@ -123,7 +123,7 @@ def main(input_file: str, config_file: str, code: str)  -> None:
     host = data["host"]
     port = data["port"]
     user = data["user"]
-    database = data["password"]
+    database = data["database"]
     password = data["password"]
 
     click.echo("🔍 Fetching data collection inforamtion....")
@@ -152,7 +152,7 @@ def main(input_file: str, config_file: str, code: str)  -> None:
     click.echo(f"✅ All values in file {input_file} have been inserted into db")
 
 
-def read_from_config_file(config_file: str) -> Dict[str]:
+def read_from_config_file(config_file: str) -> Dict[str, Any]:
     """
         Reads from the config file
 
