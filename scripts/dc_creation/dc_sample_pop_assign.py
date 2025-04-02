@@ -3,11 +3,40 @@ import sys
 import mysql.connector
 import configparser
 from mysql.connector import Error
+from typings import Dict
 
+@click.command()
+@click.option(
+    "--input_file",
+    "-i",
+    type=click.Path(exists=True),
+    help="Input file only sample id and population id",
+    required=True,
+)
+@click.option(
+    "--config_file",
+    "-c",
+    type=click.Path(exists=True),
+    help="Config file for database setup",
+)
+@click.option("--code", "-code", type=str, help="Data collection code")
 
 def insert_info_into_dc_pop_assign(
-    did, sid, popid, host, port, user, database, password
-):
+    did: int, sid: int, popid: int, host: str, port: int, user: str, database: str, password: str
+) -> None:
+    """
+        Insert into the dc_sample_pop_table in the igsr_web database
+
+        Args:
+            did (int): Data collection id
+            sid (int): Sample id 
+            popid (int): Population id
+            host (str): The host of the database
+            port (int): The port of the database
+            user (str): The user for the database
+            database (str): The database 
+            password (str): Password for the database
+    """    
     try:
         # insert_query into dc sample pop assign
         insert_query = """ INSERT into dc_sample_pop_assign (sample_id, population_id, data_collection_id) 
@@ -37,7 +66,19 @@ def insert_info_into_dc_pop_assign(
             db.close()
 
 
-def get_data_collection_id(code, host, port, user, database, password):
+def get_data_collection_id(code: str, host: str, port: int, user: str, database: str, password: str) -> None:
+    """
+        Get the data collection id from the code given in the command
+
+        Args:
+            code (str): Code for the data collection
+            host (str): The host of the database
+            port (int): The port of the database
+            user (str): The user for the database
+            database (str): The database 
+            password (str): Password for the database
+
+    """    
     try:
         # select query from data collection
         select_query = """
@@ -68,34 +109,21 @@ def get_data_collection_id(code, host, port, user, database, password):
         click.echo(f"❌ Database error issue: {e}")
         sys.exit()
 
+def main(input_file: str, data: Dict[str], code: str):
+    """
+        Uses the data collection and the input file to populate the dc_sample_pop assign table
 
-@click.command()
-@click.option(
-    "--input_file",
-    "-i",
-    type=click.Path(exists=True),
-    help="Input file only sample id and population id",
-    required=True,
-)
-@click.option(
-    "--config_file",
-    "-c",
-    type=click.Path(exists=True),
-    help="Config file for database setup",
-)
-@click.option("--code", "-code", type=str, help="Data collection code")
-def main(input_file, config_file, code):
-    """
-    Uses the data collection and the input file to populate the dc_sample_pop assign table
-    """
-    click.echo("🔍 Connecting to database....")
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    host = config["database"]["host"]
-    port = config["database"]["port"]
-    user = config["database"]["user"]
-    database = config["database"]["name"]
-    password = config["database"]["password"]
+        Args:
+            input_file (str): input file
+            data (Dict[str]): data containing the database 
+            code (str): The code of the data collection
+    """    
+
+    host = data["host"]
+    port = data["port"]
+    user = data["user"]
+    database = data["password"]
+    password = data["password"]
 
     click.echo("🔍 Fetching data collection inforamtion....")
     no_sample = []
@@ -122,6 +150,19 @@ def main(input_file, config_file, code):
     )
     click.echo(f"✅ All values in file {input_file} have been inserted into db")
 
+
+def read_from_config_file(config_file: str):
+    data = {}
+    click.echo("🔍 Connecting to database....")
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    data["host"] = config["database"]["host"]
+    data["port"] = config["database"]["port"]
+    data["user"] = config["database"]["user"]
+    data["database"] = config["database"]["name"]
+    data["password"] = config["database"]["password"]
+
+    return data
 
 if __name__ == "__main__":
     main()
