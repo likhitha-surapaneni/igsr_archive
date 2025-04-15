@@ -12,8 +12,9 @@ url = "https://www.ebi.ac.uk/ena/portal/api/search"
 @click.command()
 @click.option("--input_file", "-i", type=click.Path(exists=True), help="Input file containing file accession column and project accession")
 @click.option("--output_file", "-o", help="Output index file accession column")
+@click.option("--date", "-d", help="Date of the run in the format YYYYMMDD eg 20250305")
 
-def get_data_from_ena(input_file: str, output_file: str) -> None:
+def get_data_from_ena(input_file: str, output_file: str, date: str) -> None:
     """
         Function that fetches data from the ENA API using the run accession and study accession 
 
@@ -26,7 +27,7 @@ def get_data_from_ena(input_file: str, output_file: str) -> None:
     with open(input_file, newline='', encoding='utf-8') as csvfile, open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
         reader = csv.DictReader(csvfile, delimiter=',') 
         writer = None
-        tsvfile.write("##Date=20250305\n")
+        tsvfile.write(f"##Date={date}\n")
         tsvfile.write("##HGSVC PHASE 3\n")
         tsvfile.write("##RUN_ACCESSION=ENA/SRA assigned accession for the run\n")
         tsvfile.write("##SRA_MD5=MD5 for the file according to SRA\n")

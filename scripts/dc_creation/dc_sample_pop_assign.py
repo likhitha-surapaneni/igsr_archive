@@ -126,7 +126,7 @@ def main(input_file: str, config_file: str, code: str)  -> None:
     database = data["database"]
     password = data["password"]
 
-    click.echo("🔍 Fetching data collection inforamtion....")
+    click.echo("🔍 Fetching data collection information....")
     no_sample = []
 
     did = get_data_collection_id(code, host, port, user, database, password)
@@ -135,6 +135,8 @@ def main(input_file: str, config_file: str, code: str)  -> None:
         click.echo(f"✅ Data collection id is {did}")
         with open(input_file, "r") as file:
             lines = file.readlines()[1:]
+            if len(lines) == 0:
+                sys.exit(f"File {input_file} is empty, so can not be used.")
         for line in lines:
             columns = line.strip().split(",")
             sid, popid = columns[1], columns[2]
@@ -173,6 +175,7 @@ def read_from_config_file(config_file: str) -> Dict[str, Any]:
     data["password"] = config["database"]["password"]
 
     return data
+
 
 if __name__ == "__main__":
     main()

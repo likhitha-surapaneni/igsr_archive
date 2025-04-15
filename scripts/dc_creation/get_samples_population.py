@@ -1,6 +1,7 @@
 import click
 import mysql.connector
 import csv
+import sys
 import configparser
 from mysql.connector import Error, InterfaceError, DatabaseError
 from typing import List, Dict, Union, Any
@@ -44,6 +45,7 @@ def get_sample_info(sample_name: str, host: str, port: int, database: str, user:
         click.echo(f"❌ Database operation error: {e}")
     except Error as e:
         click.echo(f"❌ General MySQL error: {e}")
+
 
 def check_sample_info_and_add(host: str, port: int, database: str, user: str, password: str, samples_file: str) -> List[str]:
     """
@@ -102,6 +104,7 @@ def check_sample_info_and_add(host: str, port: int, database: str, user: str, pa
             db.close()
         
     return samples_file_list
+
 
 def fetch_sample_pop_info_differently(sample_name: str, host: str, port: int, database: str, user: str, password: str, samples_file_list: List[str]) -> List[Union[str, int]]:
     """
@@ -202,6 +205,8 @@ def main(input_file: str, output_file: str, config_file: str, sample_file: str):
 
     with open(input_file, "r") as f:
         sample_names = [line.strip() for line in f if line.strip()]
+        if len(sample_names) == 0:
+            sys.exit(f"Samples and population can not be fetched. File {input_file} is empty.")
 
     click.echo("🔍 Querying database...")
 
@@ -209,7 +214,6 @@ def main(input_file: str, output_file: str, config_file: str, sample_file: str):
         sample_id, pop_id = get_sample_info(
             sample_name, host, port, database, user, password
         )
-        print(f"{sample_name}: {sample_id}")
         if not sample_id and sample_file:
             click.echo("🔍 Checking sample info and adding......")
             sample_list = check_sample_info_and_add(host, port, database, user, password, sample_file)
