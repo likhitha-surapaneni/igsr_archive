@@ -35,7 +35,7 @@ def get_data_from_ena(input_file: str, output_file: str, date: str, project: str
     if project:
          accession_process(project, output_file, date)
     else: 
-         click.echo(f"--project or --input file needs to be defined")
+         click.echo(f"❌--project or --input file needs to be defined")
          sys.exit()
 
 
