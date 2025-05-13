@@ -139,6 +139,7 @@ def accession_process(project: str, output_file: str, date: str):
 
         lines = return_response(query, project)
         if len(lines) > 1:
+            tsvfile.write(f"#{lines[0].upper()}" + "\n")
             for line in lines[1:]:
                 tsvfile.write(line + "\n")
             click.echo(f"✅Results have been written to the {output_file}")
