@@ -47,36 +47,9 @@ def input_file_process(input_file: str, output_file: str, date: str) :
         output_file (str): Output file containing all the data fetched from the ENA API
         date (str): Date in the format YYYYMMDDD
     """        
-        
-    with open(input_file, newline='', encoding='utf-8') as csvfile, open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
+    file = write_header(output_file, date)
+    with open(input_file, newline='', encoding='utf-8') as csvfile, open(file, 'a', newline='', encoding='utf-8') as tsvfile:
         reader = csv.DictReader(csvfile, delimiter=',') 
-        writer = None
-        tsvfile.write(f"##Date={date}\n")
-        tsvfile.write("##HGSVC PHASE 3\n")
-        tsvfile.write("##RUN_ACCESSION=ENA/SRA assigned accession for the run\n")
-        tsvfile.write("##SRA_MD5=MD5 for the file according to SRA\n")
-        tsvfile.write("##SUBMITTED_MD5 = MD5 for the file on submission\n")
-        tsvfile.write("##FASTQ_FTP=ENA/SRA FTP fath from which the FASTQ file can be downloaded\n")
-        tsvfile.write("##SAMPLE_ACCESSION=ENA/SRA assigned accession for the sample\n")
-        tsvfile.write("##STUDY_ACCESSION=ENA/SRA assigned accession for the study\n")
-        tsvfile.write("##CENTER_NAME=sequencing center that produced and submitted the sequence data\n")
-        tsvfile.write("##SUBMISSION_ACCESSION=ENA/SRA assigned accession for this submission\n")
-        tsvfile.write("##SUBMITTED_FTP=Submission FTP for this submission\n")
-        tsvfile.write("##SAMPLE_TITLE=Title for the submitted sample\n")
-        tsvfile.write("##SAMPLE_DESCRIPTION=Description of the sample, usually Technology\n")
-        tsvfile.write("##Country=Country of the sample\n")
-        tsvfile.write("##EXPERIMENT_ACCESSION=ENA/SRA assigned accession for the experiment\n")
-        tsvfile.write("##INSTRUMENT_PLATFORM=type of sequencing machine used in the experiment\n")
-        tsvfile.write("##INSTRUMENT_MODEL=model of the sequencing machine used in the experiment\n")
-        tsvfile.write("##LIBRARY_NAME=identifier for the library\n")
-        tsvfile.write("##RUN_ALIAS=run name assigned by the sequencing machine\n")
-        tsvfile.write("##RUN_DATE=date the run was done\n")
-        tsvfile.write("##LIBRARY_MAX_FRAGMENT_SIZE=submitter specified insert size of the library\n")
-        tsvfile.write("##LIBRARY_LAYOUT=Library layout, this can be either PAIRED or SINGLE\n")
-        tsvfile.write("##FASTQ_ASPERA=ASPERA Path for which FASTQ file can be downloaded\n")
-        tsvfile.write("##READ_COUNT=number of reads in the run, two mates are considered as one read\n")
-
-        
         for i,row in enumerate(reader):
             file_accession = row["file accession"]
             project_accession = row["project accession"]
@@ -106,9 +79,28 @@ def accession_process(project: str, output_file: str, date: str):
         project (str): Project accession
         output_file (str): Output file containing all the data fetched from the ENA API
         date (str): Date in the format YYYYMMDDD
+    """
+    file = write_header(output_file, date)
+    with open(file, 'a', newline='', encoding='utf-8') as tsvfile:
+        file_accession = None
+        query = construct_query(file_accession, project)
+
+        lines = return_response(query, project)
+        if len(lines) > 1:
+            tsvfile.write(f"#{lines[0].upper()}" + "\n")
+            for line in lines[1:]:
+                tsvfile.write(line + "\n")
+            click.echo(f"✅Results have been written to the {output_file}")
+        else:
+            click.echo(f"❌No results for {project}")
+
+def write_header(output_file: str, date: str) :
+    """_summary_
+
+    Args:
+        output_file (str): _description_
     """    
     with open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
-        writer = None
         tsvfile.write(f"##Date={date}\n")
         tsvfile.write("##HGSVC PHASE 3\n")
         tsvfile.write("##RUN_ACCESSION=ENA/SRA assigned accession for the run\n")
@@ -134,18 +126,7 @@ def accession_process(project: str, output_file: str, date: str):
         tsvfile.write("##FASTQ_ASPERA=ASPERA Path for which FASTQ file can be downloaded\n")
         tsvfile.write("##READ_COUNT=number of reads in the run, two mates are considered as one read\n")
 
-        file_accession = None
-        query = construct_query(file_accession, project)
-
-        lines = return_response(query, project)
-        if len(lines) > 1:
-            tsvfile.write(f"#{lines[0].upper()}" + "\n")
-            for line in lines[1:]:
-                tsvfile.write(line + "\n")
-            click.echo(f"✅Results have been written to the {output_file}")
-        else:
-            click.echo(f"❌No results for {project}")
-
+    return output_file
 
 def check_file_accession(accession: str) -> None:
     """
