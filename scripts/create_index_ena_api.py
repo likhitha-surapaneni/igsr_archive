@@ -95,10 +95,11 @@ def accession_process(project: str, output_file: str, date: str):
             click.echo(f"❌No results for {project}")
 
 def write_header(output_file: str, date: str) :
-    """_summary_
+    """Writes header
 
     Args:
-        output_file (str): _description_
+        output_file (str): output_file
+        date (str) : date
     """    
     with open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
         tsvfile.write(f"##Date={date}\n")
@@ -129,10 +130,8 @@ def write_header(output_file: str, date: str) :
     return output_file
 
 def check_file_accession(accession: str) -> None:
-    """
-        Checks the file contains the column file accession 
-        #To do - Maybe check for also Run accession 
-
+    """Checks the file contains the column file accession 
+    
         Args:
             accession (str): Accession
     """    
