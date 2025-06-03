@@ -13,9 +13,10 @@ url = "https://www.ebi.ac.uk/ena/portal/api/search"
 @click.option("--input_file", "-i", type=click.Path(exists=True), help="Input file containing file accession column and project accession")
 @click.option("--output_file", "-o", help="Output index file accession column", required=True)
 @click.option("--date", "-d", help="Date of the run in the format YYYYMMDD eg 20250305", required=True)
+@click.option("--code", "-c", help="Code for the file", required=True)
 @click.option("--project", "-p", help="Project accession")
 
-def get_data_from_ena(input_file: str, output_file: str, date: str, project: str) -> None:
+def get_data_from_ena(input_file: str, output_file: str, date: str,  code: str, project: str) -> None:
     """
         Function that fetches data from the ENA API using the run accession and study accession 
 
@@ -31,15 +32,17 @@ def get_data_from_ena(input_file: str, output_file: str, date: str, project: str
         click.echo("❌Can not run both --project and --input_file at the same time")
         sys.exit()
     if input_file:
-         input_file_process(input_file, output_file, date)
+         input_file_process(input_file, output_file, date, code)
     if project:
-         accession_process(project, output_file, date)
+        file = write_header(output_file, date, code)
+        for i in project.split(","):
+            accession_process(i.strip(), file, date, code)
     else: 
          click.echo(f"❌--project or --input file needs to be defined")
          sys.exit()
 
 
-def input_file_process(input_file: str, output_file: str, date: str) :
+def input_file_process(input_file: str, output_file: str, date: str, code: str) :
     """If input file is called on the command line, this is the function that runs
 
     Args:
@@ -47,7 +50,7 @@ def input_file_process(input_file: str, output_file: str, date: str) :
         output_file (str): Output file containing all the data fetched from the ENA API
         date (str): Date in the format YYYYMMDDD
     """        
-    file = write_header(output_file, date)
+    file = write_header(output_file, date, code)
     with open(input_file, newline='', encoding='utf-8') as csvfile, open(file, 'a', newline='', encoding='utf-8') as tsvfile:
         reader = csv.DictReader(csvfile, delimiter=',') 
         for i,row in enumerate(reader):
@@ -72,7 +75,7 @@ def input_file_process(input_file: str, output_file: str, date: str) :
             else:
                 click.echo(f"❌No results for {file_accession}")
 
-def accession_process(project: str, output_file: str, date: str):
+def accession_process(project: str, output_file: str, date: str, code: str):
     """If project accession is called, this is the function that runs
 
     Args:
@@ -80,8 +83,7 @@ def accession_process(project: str, output_file: str, date: str):
         output_file (str): Output file containing all the data fetched from the ENA API
         date (str): Date in the format YYYYMMDDD
     """
-    file = write_header(output_file, date)
-    with open(file, 'a', newline='', encoding='utf-8') as tsvfile:
+    with open(output_file, 'a', newline='', encoding='utf-8') as tsvfile:
         file_accession = None
         query = construct_query(file_accession, project)
 
@@ -90,11 +92,11 @@ def accession_process(project: str, output_file: str, date: str):
             tsvfile.write(f"#{lines[0].upper()}" + "\n")
             for line in lines[1:]:
                 tsvfile.write(line + "\n")
-            click.echo(f"✅Results have been written to the {output_file}")
+            click.echo(f"✅Results of {project} have been written to the {output_file}")
         else:
             click.echo(f"❌No results for {project}")
 
-def write_header(output_file: str, date: str) :
+def write_header(output_file: str, date: str, code: str) :
     """Writes header
 
     Args:
@@ -103,7 +105,7 @@ def write_header(output_file: str, date: str) :
     """    
     with open(output_file, 'w', newline='', encoding='utf-8') as tsvfile:
         tsvfile.write(f"##Date={date}\n")
-        tsvfile.write("##HGSVC PHASE 3\n")
+        tsvfile.write(f"##{code}\n")
         tsvfile.write("##RUN_ACCESSION=ENA/SRA assigned accession for the run\n")
         tsvfile.write("##SRA_MD5=MD5 for the file according to SRA\n")
         tsvfile.write("##SUBMITTED_MD5 = MD5 for the file on submission\n")
