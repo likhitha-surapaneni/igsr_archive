@@ -14,7 +14,7 @@ url = "https://www.ebi.ac.uk/ena/portal/api/search"
 @click.option("--output_file", "-o", help="Output index file accession column", required=True)
 @click.option("--date", "-d", help="Date of the run in the format YYYYMMDD eg 20250305", required=True)
 @click.option("--code", "-c", help="Code for the file", required=True)
-@click.option("--project", "-p", help="Project accession")
+@click.option("--project", "-p", help="Project accessions e.g PRJNA851328,PRJNA701308 or PRJNA701308")
 
 def get_data_from_ena(input_file: str, output_file: str, date: str,  code: str, project: str) -> None:
     """
